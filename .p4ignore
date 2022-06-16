@@ -1,0 +1,38 @@
+.git/
+
+# Never ignore DLLs in the FMOD subfolder.
+/Team02GP3/Plugins/FMODStudio/**/lib/*
+                    
+# Ignore the Cache folder since it is updated locally.
+/Team02GP3/Plugins/FMODStudio/Cache/*
+/Team02GP3/FMODStudioCache.asset
+                    
+# Log files can be ignored.
+/Team02GP3/fmod.log
+/Team02GP3/fmod_editor.log
+/FMODProject/.cache/
+/FMODProject/.user/
+/FMODProject/.unsaved/
+
+#Built data for maps
+*_BuiltData.uasset
+
+#Compiled sourcefiles for the engine to use
+/Team02GP3/Plugins/*/Intermediate/*
+/Team02GP3/Plugins/*/Binaries/*
+
+/Team02GP3/Plugins/FMODStudio/Cache/Editor/FMODStudioCache.asset
+/Team02GP3/Plugins/FMODStudio/Resources/FMODStudioSettings.asset
+/Team02GP3/Plugins/FMODStudio/platforms/mac/lib/fmodstudio.bundle/Contents/Info.plist
+/Team02GP3/Plugins/FMODStudio/platforms/mac/lib/fmodstudioL.bundle/Contents/Info.plist
+/Team02GP3/Plugins/FMODStudio/platforms/mac/lib/resonanceaudio.bundle/Contents/Info.plist
+
+# exclude fmod binaries from previous rules
+!/Team02GP3/Plugins/FMODStudio/Binaries/**
+
+# these files should not get pushed as they are compiled during startup and cause issues if readonly
+/Team02GP3/Plugins/FMODStudio/Binaries/Win64/UE4Editor.modules
+/Team02GP3/Plugins/FMODStudio/Binaries/Win64/UE4Editor-FMODStudio.dll
+/Team02GP3/Plugins/FMODStudio/Binaries/Win64/UE4Editor-FMODStudioEditor.dll
+/Team02GP3/Plugins/FMODStudio/Binaries/Win64/UE4Editor-FMODStudioEditor.pdb
+/Team02GP3/Plugins/FMODStudio/Binaries/Win64/UE4Editor-FMODStudio.pdb

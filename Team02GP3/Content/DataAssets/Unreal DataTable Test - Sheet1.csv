@@ -1,0 +1,14 @@
+Name,LogCategory,LogName,InteractionText,LogText,LogImage
+Entry1,Tutorial,Logbook,,"Your journal will get updated as you progress, check back soon!
+
+Press J or TAB to close/open the logbook.",/Game/Art_Assets/LogImages/placeholder.placeholder
+Entry2,Tutorial,Tutorial - Keybinds,,"WASD - Move Around
+Mouse - Look
+LMB - Turn On/Off Flashlight
+RMB - Change Flashlight Mode
+E - Interact with environment
+J / TAB - Open / Close Logbook
+",/Game/Art_Assets/LogImages/placeholder.placeholder
+CoolEntry,Corruption,Growing Corruption,"Log Entry Created.
+Press J or TAB to view.","Encountered a very strange object, seems to have some sort of infection.",/Game/Art_Assets/LogImages/placeholder.placeholder
+MonsterEntry,Monster,The Stalker,Updated Log.,"A creature is hunting me, it seems aversive to uvlight.",/Game/Art_Assets/LogImages/placeholder.placeholder
