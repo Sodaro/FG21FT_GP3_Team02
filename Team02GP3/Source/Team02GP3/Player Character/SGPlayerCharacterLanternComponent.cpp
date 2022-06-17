@@ -1,6 +1,5 @@
 #include "SGPlayerCharacterLanternComponent.h"
 #include "Components/AudioComponent.h"
-#include "../Widgets/SGProgressBarWidget.h"
 
 
 USGPlayerCharacterLanternComponent::USGPlayerCharacterLanternComponent()
@@ -17,22 +16,6 @@ void USGPlayerCharacterLanternComponent::BeginPlay()
 
 	SetupLanternValues();
 
-	LightIntensitySAVED = LightIntensity;
-	
-	//CurrentBattery = BatteryMax;
-
-	Lantern->SetIntensity(0.f);
-	bLanternActive = false;
-
-	//if (LanternIndicatorClass == nullptr)
-	//	return;
-
-	//Create Indicator
-	//LanternIndicatorWidget = NewObject<USGProgressBarWidget>(this, LanternIndicatorClass);
-	//LanternIndicatorWidget->AddToViewport();
-
-	//if (bLanternActive == false)
-	//	LanternIndicatorWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void USGPlayerCharacterLanternComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -41,10 +24,7 @@ void USGPlayerCharacterLanternComponent::TickComponent(float DeltaTime, ELevelTi
 
 	DecreaseBattery(DeltaTime);
 
-	if (bLanternActive)
-	{
-		SwitchingLights(DeltaTime);
-	}
+	SwitchingLights(DeltaTime);
 }
 
 void USGPlayerCharacterLanternComponent::SetupLanternValues()
@@ -52,7 +32,8 @@ void USGPlayerCharacterLanternComponent::SetupLanternValues()
 	SetBatteryTime(NormalBatteryDrainTime);
 
 	LightIntensity = Lantern->Intensity;
-
+	LightIntensitySAVED = LightIntensity;
+	UVIntensity = LightIntensity;
 	Lantern->SetLightColor(NormalColor);
 }
 
@@ -73,7 +54,7 @@ void USGPlayerCharacterLanternComponent::SwitchingLights(float DeltaTime)
 
 void USGPlayerCharacterLanternComponent::DecreaseBattery(float DeltaTime)
 {
-	if (bLanternActive)
+	if (bUVIsActive)
 	{
 		BatteryTimer -= DeltaTime;
 		CurrentBatteryTimer = BatteryTimer;
@@ -92,38 +73,35 @@ void USGPlayerCharacterLanternComponent::DecreaseBattery(float DeltaTime)
 
 void USGPlayerCharacterLanternComponent::HandleBatteryLevels()
 {
-	switch (CurrentBattery)
+	
+	if (CurrentBattery >= 20.f)
 	{
-	case 100:
-	case 99:
-	case 50:
-	case 49:
-	case 20:
 		// 100% - 20% HighCharger, Normal Intensity and Range
 		LightIntensity = LightIntensitySAVED;
 		bLowBattery = false;
-		break;
-	case 19:
-	case 1:
+		bNoBatteryLeft = false;
+	}
+	if (CurrentBattery > 0.f && CurrentBattery <= 19.f)
+	{
 		// 19% - 1% LowCharge, Decreased Intensity and Range + Flickering 
 		bLowBattery = true;
+		bNoBatteryLeft = false;
 		LightFlickering();
-		break;
-	case 0:
-		// 0% No Light Intensity
-		SetLightIntensity(0.f);
-		break;
-	default:
-		break;
+	}
+	if (CurrentBattery <= 0.f)
+	{
+		// 0% No UV
+		NormalLantern();
+		bNoBatteryLeft = true;
 	}
 }
 
 void USGPlayerCharacterLanternComponent::LightFlickering()
 {
-	if (bLowBattery == false || bLanternActive == false || CurrentBattery <= 0) { return; }
+	if (bLowBattery == false || CurrentBattery <= 0 || bUVIsActive == false) { return; }
 
-	float RandomSeconds = FMath::RandRange(0.f, 1.f);
-	float WaitForSeconds = 0.2f;
+	float RandomSeconds = FMath::RandRange(1.f,2.f);
+	float WaitForSeconds =2.f;
 
 	float RandomStrongIntensity = FMath::RandRange(LowerIntensity - 200.f, LowerIntensity);
 	float RandomWeakIntensity = FMath::RandRange(LowerIntensity - 4000.f, LowerIntensity - 2000.f);
@@ -132,15 +110,17 @@ void USGPlayerCharacterLanternComponent::LightFlickering()
 	{
 	case 0:
 		// Stronger light
-		SetLightIntensity(RandomStrongIntensity);
+		SetLightIntensity(RandomStrongIntensity); 
 		WaitForSeconds = RandomSeconds;
+		UVIntensity = RandomStrongIntensity;
 
 		LightFlickeringCase++;
 		break;
 	case 1:
 		// Weaker light
-		SetLightIntensity(RandomWeakIntensity);
+		SetLightIntensity(RandomWeakIntensity); 
 		WaitForSeconds = RandomSeconds;
+		UVIntensity = RandomWeakIntensity;
 
 		LightFlickeringCase = 0;
 		break;
@@ -159,74 +139,45 @@ void USGPlayerCharacterLanternComponent::LightFlickering()
 	);
 }
 
-void USGPlayerCharacterLanternComponent::ToggleLanternModes()
-{
-	if (bLanternActive == false) { return; }
-
-	bUVIsActive = !bUVIsActive;
-
-	if(bUVIsActive == false)
-	{
-		AudioComponent->Sound = UVDisableSound;
-		NormalLantern();
-	}
-	else
-	{
-		AudioComponent->Sound = UVEnableSound;
-		UVLantern();
-	}
-
-	UVEnabledChanged.Broadcast(bUVIsActive);
-	if (AudioComponent->Sound != nullptr)
-	{
-		AudioComponent->Play();
-	}
-}
-
-void USGPlayerCharacterLanternComponent::ToggleLantern()
-{
-	bLanternActive = !bLanternActive;
-
-	if (bLanternActive)
-	{
-		AudioComponent->Sound = LanternEnableSound;
-		Lantern->SetIntensity(LightIntensity);
-	}
-	else
-	{
-		AudioComponent->Sound = LanternDisableSound;
-		Lantern->SetIntensity(0.f);
-	}
-
-	LanternEnabledChanged.Broadcast(bLanternActive);
-	if (AudioComponent->Sound != nullptr)
-	{
-		AudioComponent->Play();
-	}
-}
-
 void USGPlayerCharacterLanternComponent::UVLantern()
 {
+	if (bNoBatteryLeft) { return; }
+
 	SetBatteryTime(UVBatteryDrainTime);
 
 	TimeBeforeChangingLight = TimeBeforeChangeKeeper;
 
 	Lantern->SetLightColor(UVColor);
 
+	SetLightIntensity(UVIntensity);
+
+	bUVIsActive = true;
+	if (UVEnableSound != nullptr)
+	{
+		AudioComponent->Sound = UVEnableSound;
+		AudioComponent->Play();
+	}
+	UVEnabledChanged.Broadcast(true);
 }
 
 void USGPlayerCharacterLanternComponent::NormalLantern()
 {
-	SetBatteryTime(NormalBatteryDrainTime);
-
 	TimeBeforeChangingLight = TimeBeforeChangeKeeper;
 
 	Lantern->SetLightColor(NormalColor);
+
+	SetLightIntensity(LightIntensitySAVED);
+
+	bUVIsActive = false;
+	if (UVDisableSound != nullptr)
+	{
+		AudioComponent->Sound = UVDisableSound;
+		AudioComponent->Play();
+	}
+	UVEnabledChanged.Broadcast(false);
 }
 
 void USGPlayerCharacterLanternComponent::ChargeLantern()
 {
 	CurrentBattery = BatteryMax;
-
-	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Cyan, "FULLY CHARGED");
 }

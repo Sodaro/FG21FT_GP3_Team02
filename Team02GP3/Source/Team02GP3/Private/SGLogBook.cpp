@@ -9,7 +9,6 @@
 #include "Components/Scrollbox.h"
 #include "../Widgets/SGLogCategoryWidget.h"
 #include "../Widgets/SGEntryListItem.h"
-#include "../Widgets/SGButtonWidget.h"
 #include "Components/Button.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
@@ -24,7 +23,23 @@ void USGLogBook::NativeConstruct()
 	LogImageWidget->SetVisibility(ESlateVisibility::Hidden);
 }
 
-bool USGLogBook::AddEntry(FName Key)
+void USGLogBook::AddEntries(const TArray<FName>& Keys)
+{
+	if (DataTable == nullptr || Keys.Num() == 0)
+		return;
+
+	for(FName Key : Keys)
+	{
+		AddEntry(Key, false);
+	}
+}
+
+TArray<FName>& USGLogBook::GetUsedKeys()
+{
+	return UsedKeys;
+}
+
+bool USGLogBook::AddEntry(FName Key, bool ShouldBroadcastEvent)
 {
 	
 	if (DataTable == nullptr && UsedKeys.Contains(Key) == false)
@@ -80,7 +95,10 @@ bool USGLogBook::AddEntry(FName Key)
 	LogEntryWidget->OnEntryClicked.AddDynamic(this, &USGLogBook::DisplayContent);
 
 	UsedKeys.Add(Key);
-	LogbookUpdated.Broadcast(this);
+	if (ShouldBroadcastEvent)
+	{
+		LogbookUpdated.Broadcast(this);
+	}
 	return true;
 }
 

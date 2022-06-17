@@ -7,6 +7,7 @@
 USGSaveGame::USGSaveGame()
 {
 	PlayerTransform = FTransform();
+	LogbookKeys = TArray<FName>();
 }
 
 
@@ -27,6 +28,12 @@ void ASGPlayerCharacter::SaveGame()
 	SaveGameInstance->SavedLevel = GetWorld()->GetCurrentLevel();
 	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, SaveGameInstance->GetCurrentLevelName.ToString());
 
+	//deep copy the logbook keys so they can be used to initialize the logbook on start
+	TArray<FName> LogKeys = GetLogbookKeys();
+	for (FName Key : LogKeys)
+	{
+		SaveGameInstance->LogbookKeys.Emplace(Key);
+	}
 
 	//Saves the GameInstance
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("SaveSlot"), 0);

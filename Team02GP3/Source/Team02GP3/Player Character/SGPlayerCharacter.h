@@ -21,13 +21,13 @@ private:
 	void BeginPlay() override;
 	void Tick(float DeltaTime) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInput);
-	
+
 	void HandleForwardInput(float Value);
 	void HandleRightInput(float Value);
 
 	void HandleSprintingPressed();
 	void HandleSprintingReleased();
-	
+
 	bool bIsSprinting = false;
 	float Acceleration = 0.f;
 	float WalkSpeed = 0.f;
@@ -36,15 +36,18 @@ private:
 	void HandleControllerPitchRotation(float Value);
 	void HandleControllerYawRotation(float Value);
 
-	void HandleLanternToggle();
-	void HandleToggleLanternModes();
-	
+	void HandleLeftClick();
+	void HandleRightClick();
+
 	void HandleToggleJournal();
 
 	void HandleMoveableInteraction();
 	void PickUpBox();
 	void DropBox();
 	void SetupLineTrace(float TraceLength);
+
+	UFUNCTION()
+	void OnUVEnabledChanged(bool Enabled);
 
 	FHitResult OutHit;
 	FVector LineStart = FVector::ZeroVector;
@@ -60,7 +63,6 @@ private:
 	bool bIsInteractingWithBox = false;
 	bool bToggleJournal = false;
 
-	
 	float CurrentStamina = MaxStamina;
 	float MinStamina = 0.f;
 
@@ -75,16 +77,20 @@ private:
 	void DecreaseStamina(float DeltaTime);
 	void ReChargeStamina(float DeltaTime);
 
-	//---------------------TEST------------------//
-	bool bLanternActive = false;
-	bool bUVActive = false;
-
-	void ToggleTEST();
-	bool bTEST = false;
+	void RotateLantern(float DeltaTime);
 
 public:
 
+	UPROPERTY(EditAnywhere)
+	float Range = 30.f;
+
 	APlayerController* Controller;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<AActor*> Positions;
+
+	UFUNCTION(BlueprintCallable)
+	void Teleport(int i);
 
 	UPROPERTY(EditAnywhere)
 	ASGPlayerCharacterCameraComponent* PlayerCamera;
@@ -96,7 +102,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Logbook")
 	TSubclassOf<USGPlayerUI> PlayerUIClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	USGPlayerUI* PlayerUI;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -107,7 +113,9 @@ public:
 
 	FVector MouseToWorld();
 
-	UPROPERTY(EditAnywhere, Category="RotationSpeed")
+	TArray<FName>& GetLogbookKeys();
+
+	UPROPERTY(EditAnywhere, Category = "RotationSpeed")
 	float RotationSpeed = 3.f;
 
 	UPROPERTY(EditAnywhere, Category = "Sprinting")

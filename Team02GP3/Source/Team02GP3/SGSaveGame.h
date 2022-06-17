@@ -22,6 +22,9 @@ public:
 	UPROPERTY()
 	TSoftObjectPtr<UWorld> SavedLevel;
 
+	UPROPERTY()
+	TArray<FName> LogbookKeys;
+
 	USGSaveGame();
 	
 

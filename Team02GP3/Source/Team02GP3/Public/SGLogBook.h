@@ -7,6 +7,7 @@
 
 class UTextBlock;
 class UImage;
+class UButton;
 class UListView;
 class USGListItem;
 class UDataTable;
@@ -15,7 +16,8 @@ class UScrollBox;
 class USGLogCategoryWidget;
 class USGEntryListItem;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLogbookUpdatedSignature, USGLogBook*, Logbook);
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLogbookUpdatedDelegate, USGLogBook*, Logbook);
 
 UCLASS()
 class TEAM02GP3_API USGLogBook : public UUserWidget
@@ -44,9 +46,12 @@ protected:
 	TArray<USGListItem*> ListItems;
 
 	TMap<FName, USGLogCategoryWidget*> LogCategories;
-	TSet<FName> UsedKeys;
+	TArray<FName> UsedKeys;
 
 public:
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* LogCloseButton;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UDataTable* DataTable;
@@ -56,17 +61,26 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<USGEntryListItem> LogEntryClass;
+
+	UFUNCTION()
+	void AddEntries(const TArray<FName>& Keys);
+
+	UFUNCTION()
+	TArray<FName>& GetUsedKeys();
+
+	
+
 	/**
 	* Attempt to add a category to logbook.
 	* @param Key used to find entry in datatable.
 	* @return True if logbook was successful in adding category, false otherwise.
 	*/
 	UFUNCTION(BlueprintCallable)
-	bool AddEntry(FName Key);
+	bool AddEntry(FName Key, bool ShouldBroadcastEvent);
 
 	UFUNCTION(BlueprintCallable)
 	void DisplayContent(USGEntryListItem* Item);
 
 	UPROPERTY(BlueprintAssignable)
-	FLogbookUpdatedSignature LogbookUpdated;
+	FLogbookUpdatedDelegate LogbookUpdated;
 };

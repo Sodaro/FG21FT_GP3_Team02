@@ -3,7 +3,6 @@
 
 #include "SGPlayerInteractionComponent.h"
 #include "../Widgets/SGPlayerBarkWidget.h"
-#include "../Widgets/SGButtonWidget.h"
 #include "SGLogBook.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
@@ -43,6 +42,8 @@ void USGPlayerInteractionComponent::BeginPlay()
 	Logbook = NewObject<USGLogBook>(this, LogbookClass);
 	Logbook->SetVisibility(ESlateVisibility::Hidden);
 	Logbook->AddToViewport(1);
+
+	Logbook->LogCloseButton->OnClicked.AddDynamic(this, &USGPlayerInteractionComponent::HideLogbook);
 
 	PlayerBarkWidget = NewObject<USGPlayerBarkWidget>(this, PlayerBarkWidgetClass);
 	PlayerBarkWidget->TargetActor = Cast<AActor>(GetOuter());
@@ -105,6 +106,7 @@ void USGPlayerInteractionComponent::ToggleLogbookVisibility(bool Enabled)
 
 void USGPlayerInteractionComponent::ShowLogbook()
 {
+	bIsLogbookDisplayed = true;
 	AudioComponent->Sound = LogbookOpenSound;
 	if (AudioComponent->Sound != nullptr)
 	{
@@ -115,6 +117,7 @@ void USGPlayerInteractionComponent::ShowLogbook()
 
 void USGPlayerInteractionComponent::HideLogbook()
 {
+	bIsLogbookDisplayed = false;
 	AudioComponent->Sound = LogbookCloseSound;
 	if (AudioComponent->Sound != nullptr)
 	{

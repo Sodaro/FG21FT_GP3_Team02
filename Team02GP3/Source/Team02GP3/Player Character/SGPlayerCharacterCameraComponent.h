@@ -38,6 +38,16 @@ private:
 	FVector ZoomOutVector = FVector::ZeroVector;
 	FVector ZoomInVector = FVector::ZeroVector;
 
+	void CameraBob(float DeltaTime);
+	float Bounce = 0.f;
+	float MinBounce = 0.f;
+	float MaxBounce = 10.f;
+	float ClampedBounce = 0.f;
+	float Timer = 0.5f;
+	bool bCameraBobActive = true;
+
+
+
 public:
 
 	void ZoomInCamera();
@@ -56,4 +66,6 @@ public:
 	float CameraRecenterSpeed = 1.f;
 
 	bool bJournalIsOpen = false;
+
+	bool bCharacterIsSprinting = false;
 };

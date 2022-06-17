@@ -37,6 +37,8 @@ void ASGPlayerCharacter::BeginPlay()
 		return;
 	}
 
+	PlayerLantern->UVEnabledChanged.AddDynamic(this, &ASGPlayerCharacter::OnUVEnabledChanged);
+
 	PlayerUI = NewObject<USGPlayerUI>(this, PlayerUIClass);
 	PlayerUI->Initialize(PlayerLantern, InteractionComponent);
 	//PlayerUI->LogbookNotificationImage->SetVisibility(ESlateVisibility::Hidden);
@@ -47,6 +49,7 @@ void ASGPlayerCharacter::BeginPlay()
 	{
 		SetActorTransform(SaveGameInstance->PlayerTransform);
 		PlayerLantern->CurrentBattery = SaveGameInstance->CurrentBattery;
+		InteractionComponent->Logbook->AddEntries(SaveGameInstance->LogbookKeys);
 	}
 }
 
@@ -56,7 +59,8 @@ void ASGPlayerCharacter::Tick(float DeltaTime)
 
 	if (bRotatePlayer && bIsSprinting == false)
 	{
-		RotateActor(DeltaTime);
+		//RotateActor(DeltaTime);
+		RotateLantern(DeltaTime);
 	}
 
 	if (CurrentStamina <= 0.f)
@@ -87,14 +91,8 @@ void ASGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput)
 	PlayerInput->BindAction(TEXT("Sprint"), IE_Pressed, this, &ASGPlayerCharacter::HandleSprintingPressed);
 	PlayerInput->BindAction(TEXT("Sprint"), IE_Released, this, &ASGPlayerCharacter::HandleSprintingReleased);
 	// Lantern
-	//PlayerInput->BindAction("LanternSwitch", IE_Pressed, this, &ASGPlayerCharacter::HandleToggleLanternModes);
-	//PlayerInput->BindAction("TurnOnOffLantern", IE_Pressed, this, &ASGPlayerCharacter::HandleLanternToggle);
-	
-	PlayerInput->BindAction("LanternSwitch", IE_Pressed, this, &ASGPlayerCharacter::HandleToggleLanternModes);
-	PlayerInput->BindAction("TurnOnOffLantern", IE_Pressed, this, &ASGPlayerCharacter::HandleLanternToggle);
-
-	PlayerInput->BindAction("TEST", IE_Pressed, this, &ASGPlayerCharacter::ToggleTEST);
-
+	PlayerInput->BindAction("LanternSwitch", IE_Pressed, this, &ASGPlayerCharacter::HandleRightClick);
+	PlayerInput->BindAction("TurnOnOffLantern", IE_Pressed, this, &ASGPlayerCharacter::HandleLeftClick);
 
 	// Journal
 	PlayerInput->BindAction("ToggleJournal", IE_Pressed, this, &ASGPlayerCharacter::HandleToggleJournal);
@@ -108,108 +106,58 @@ void ASGPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput)
 void ASGPlayerCharacter::HandleForwardInput(float Value)
 {
 	if (bToggleJournal) return;
-	
-	GetCharacterMovement()->AddInputVector(GetActorLocation().XAxisVector *  Value, false);
+
+	GetCharacterMovement()->AddInputVector(GetActorLocation().XAxisVector * Value, false);
 }
 
 void ASGPlayerCharacter::HandleRightInput(float Value)
 {
 	if (bToggleJournal) return;
 
-	GetCharacterMovement()->AddInputVector(GetActorLocation().YAxisVector *  Value, false);	
+	GetCharacterMovement()->AddInputVector(GetActorLocation().YAxisVector * Value, false);
 }
 
 void ASGPlayerCharacter::HandleSprintingPressed()
 {
 	if (CurrentStamina <= MinStamina || bIsInteractingWithBox) { return; }
-	
+	PlayerCamera->bCharacterIsSprinting = true;
 	SprintActive();
 }
 
 void ASGPlayerCharacter::HandleSprintingReleased()
 {
+	PlayerCamera->bCharacterIsSprinting = false;
 	SprintInnactive();
 }
 
-void ASGPlayerCharacter::HandleLanternToggle()
+void ASGPlayerCharacter::HandleLeftClick()
 {
 	if (bToggleJournal) return;
 
-	if(bTEST)
+	// Normal Light
+	if (PlayerLantern->bUVIsActive)
 	{
-		PlayerLantern->ToggleLantern();
-
-		if (PlayerLantern->bLanternActive)
-		{
-			PlayerUI->ShowFlashlightIndicator();
-		}
-		else
-		{
-			PlayerUI->HideFlashlightIndicator();
-		}
+		PlayerLantern->NormalLantern();
 	}
-	else
-	{
-		// if light off turn on
-		// if UV light on switch to normal
-		// if normal is on turn off
-
-		if (bLanternActive)
-		{
-			if (bUVActive)
-			{
-				bUVActive = false;
-				PlayerLantern->NormalLantern();
-			}
-			else
-			{
-				bLanternActive = false;
-				PlayerLantern->ToggleLantern();
-			}
-		}
-		else
-		{
-			bLanternActive = true;
-			PlayerLantern->NormalLantern();
-			PlayerLantern->ToggleLantern();
-		}
-	}
+	//else
+	//{
+	//	PlayerLantern->UVLantern();
+	//}
 }
 
-void ASGPlayerCharacter::HandleToggleLanternModes()
+void ASGPlayerCharacter::HandleRightClick()
 {
 	if (bToggleJournal) return;
 
-	if(bTEST)
+	// UV Light
+	if (PlayerLantern->bUVIsActive == false)
 	{
-		PlayerLantern->ToggleLanternModes();
+		PlayerLantern->UVLantern();
 	}
-	else 
-	{
-		// if light off turn on
-		// if normal light on swith to UV
-		// if UV is on turn off
-
-		if (bLanternActive)
-		{
-			if (!bUVActive)
-			{
-				bUVActive = true;
-				PlayerLantern->UVLantern();
-			}
-			else
-			{
-				bLanternActive = false;
-				PlayerLantern->ToggleLantern();
-			}
-		}
-		else
-		{
-			bLanternActive = true;
-			PlayerLantern->UVLantern();
-			PlayerLantern->ToggleLantern();
-		}
-	}
+	//else
+	//{
+	//	PlayerLantern->NormalLantern();
+	//}
 }
 
 void ASGPlayerCharacter::HandleToggleJournal()
@@ -222,8 +170,8 @@ void ASGPlayerCharacter::HandleToggleJournal()
 
 void ASGPlayerCharacter::RotateActor(float DeltaTime)
 {
-	if (bToggleJournal) return; 
-	
+	if (bToggleJournal) return;
+
 	FRotator TargetRotation = (MouseToWorld() - GetActorLocation()).Rotation();
 
 	FRotator ActorRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationSpeed);
@@ -277,9 +225,33 @@ void ASGPlayerCharacter::ReChargeStamina(float DeltaTime)
 	}
 }
 
-void ASGPlayerCharacter::ToggleTEST()
+void ASGPlayerCharacter::RotateLantern(float DeltaTime)
 {
-	bTEST = !bTEST;
+	FRotator TargetRotation = (MouseToWorld() - GetActorLocation()).Rotation();
+	FQuat ForwardRotation = GetActorRotation().Quaternion();
+
+	auto Location = (MouseToWorld() - GetActorLocation());
+	Location.Normalize();
+
+	float Dot = FVector::DotProduct(GetActorForwardVector(), Location);
+	auto Radians = FMath::Acos(Dot);
+
+	float Degrees = FMath::RadiansToDegrees(Radians);
+
+	if (Degrees > Range)
+	{
+		auto InterpEPIC = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 10.f);
+		SetActorRotation(InterpEPIC);
+	}
+	else
+	{
+		PlayerLantern->Lantern->SetWorldRotation(TargetRotation);
+	}
+}
+
+void ASGPlayerCharacter::Teleport(int i)
+{
+	SetActorLocation(Positions[i]->GetActorLocation());
 }
 
 void ASGPlayerCharacter::ResetPlayer()
@@ -303,6 +275,11 @@ FVector ASGPlayerCharacter::MouseToWorld()
 	);
 
 	return EndLocation;
+}
+
+TArray<FName>& ASGPlayerCharacter::GetLogbookKeys()
+{
+	return InteractionComponent->Logbook->GetUsedKeys();
 }
 
 void ASGPlayerCharacter::HandleMoveableInteraction()
@@ -335,7 +312,7 @@ void ASGPlayerCharacter::PickUpBox()
 void ASGPlayerCharacter::DropBox()
 {
 	SetupLineTrace(100.f);
-	
+
 	if (GetWorld()->LineTraceSingleByChannel(OutHit, LineStart, LineEnd, ECC_Visibility, CollisionParams))
 	{
 		if (Cast<AMoveableBox>(OutHit.Actor))
@@ -352,6 +329,18 @@ void ASGPlayerCharacter::SetupLineTrace(float TraceLength)
 	LineLength = TraceLength;
 	LineStart = GetActorLocation() - FVector(0.f, 0.f, 50.f);
 	LineEnd = LineStart + (GetActorForwardVector() * LineLength);
-	
+
 	CollisionParams.AddIgnoredActor(this);
+}
+
+void ASGPlayerCharacter::OnUVEnabledChanged(bool Enabled)
+{
+	if (Enabled)
+	{
+		PlayerUI->ShowFlashlightIndicator();
+	}
+	else
+	{
+		PlayerUI->HideFlashlightIndicator();
+	}
 }

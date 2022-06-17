@@ -21,7 +21,7 @@ class USGPlayerCharacterLanternComponent : public UActorComponent
 private:
 
 	USGPlayerCharacterLanternComponent();
-	
+
 	void BeginPlay() override;
 	void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void SetupLanternValues();
@@ -50,13 +50,13 @@ private:
 	void LightFlickering();
 	int LightFlickeringCase = 0;
 
-	UPROPERTY(EditDefaultsOnly)
-	USpotLightComponent* Lantern;
-
 	float LightIntensity = 10000.f;
 	float LightIntensitySAVED = 0.f;
 
 	void UpdateIndicator();
+	bool bNoBatteryLeft = false;
+
+	float UVIntensity = 0.f;
 
 public:
 	bool bLanternActive = false;
@@ -86,10 +86,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Indicator | Colors")
 	FLinearColor MediumChargeColor = FLinearColor::Yellow;
 
-	UPROPERTY(EditDefaultsOnly, Category="Indicator | Colors")
+	UPROPERTY(EditDefaultsOnly, Category = "Indicator | Colors")
 	FLinearColor LowChargeColor = FLinearColor::Red;
 
-	UPROPERTY(EditDefaultsOnly, meta=(ClampMin = "0", ClampMax = "1", Category = "Indicator | Colors"))
+	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "0", ClampMax = "1", Category = "Indicator | Colors"))
 	float MediumChargeUpperThreshold = 0.49f;
 
 	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = "0", ClampMax = "1", Category = "Indicator | Colors"))
@@ -111,7 +111,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sounds | UV")
 	USoundBase* UVDisableSound;
-	
+
 	//-----------ENDAUDIO----------------
 
 	UPROPERTY(EditAnywhere, Category = "LanternValues")
@@ -149,4 +149,6 @@ public:
 
 	FFloatFloatDelegate BatteryLevelChanged;
 
+	UPROPERTY(EditDefaultsOnly)
+	USpotLightComponent* Lantern;
 };

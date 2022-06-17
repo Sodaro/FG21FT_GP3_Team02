@@ -25,7 +25,7 @@ public:
 
 	ASGInteractableActor();
 	
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* InteractionSphereComponent;
 
 	UPROPERTY(EditDefaultsOnly)

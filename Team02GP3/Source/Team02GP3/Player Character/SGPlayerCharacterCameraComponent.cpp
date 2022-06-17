@@ -23,32 +23,44 @@ void ASGPlayerCharacterCameraComponent::BeginPlay()
 	ZoomInVector = LocationOffset - ZoomInOffset;
 
 	CameraRecenterSpeedSaved = CameraRecenterSpeed;
+
+	Bounce = GetActorLocation().Z - OtherActor->GetActorLocation().Z;
+	MinBounce = Bounce - 20.f;
+	MaxBounce = Bounce + 20.f;
+
+	ClampedBounce = FMath::Clamp(Bounce, MinBounce, MaxBounce);
 }
 
 void ASGPlayerCharacterCameraComponent::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	CameraBob(DeltaTime);
 
 	if (bJournalIsOpen)
 	{
 		SetActorLocation(GetActorLocation());
 	}
-	else 
+	else
 	{
 		FollowPlayer(DeltaTime);
-		FollowMouse(DeltaTime);
+
+		if (bCharacterIsSprinting == false)
+		{
+			FollowMouse(DeltaTime);
+		}
 	}
 }
 
 void ASGPlayerCharacterCameraComponent::FollowPlayer(float DeltaTime)
 {
 	FVector OffsetedActorLocation = OtherActor->GetActorLocation() + LocationOffset;
+	//OffsetedActorLocation.Z = ClampedBounce;
 	FVector CameraLocation = GetActorLocation();
 
 	FVector TargetLocation = FMath::VInterpTo(CameraLocation, OffsetedActorLocation, DeltaTime, CameraRecenterSpeed);
 
-	PlayerCamera->SetWorldLocation(TargetLocation);
+	SetActorLocation(TargetLocation);
 }
 
 void ASGPlayerCharacterCameraComponent::FollowMouse(float DeltaTime)
@@ -88,7 +100,10 @@ void ASGPlayerCharacterCameraComponent::FollowMouse(float DeltaTime)
 	
 	FVector Min = FVector(PlayerLocation.X - CameraOffset, PlayerLocation.Y - CameraOffset, Offset.Z);
 	FVector Max = FVector(PlayerLocation.X + CameraOffset, PlayerLocation.Y + CameraOffset, Offset.Z);
-	
+
+	//FVector Min = FVector(PlayerLocation.X - CameraOffset, PlayerLocation.Y - CameraOffset, MinBounce);
+	//FVector Max = FVector(PlayerLocation.X + CameraOffset, PlayerLocation.Y + CameraOffset, MaxBounce);
+
 	FVector ClampedTargetLocation = ClampVector(MouseToWorld(), Min, Max);
 	
 	FVector NewTargetLocation = FMath::VInterpTo(GetActorLocation(), ClampedTargetLocation, DeltaTime, MouseFollowSpeed);
@@ -111,6 +126,28 @@ FVector ASGPlayerCharacterCameraComponent::MouseToWorld()
 	);
 
 	return EndLocation;
+}
+
+void ASGPlayerCharacterCameraComponent::CameraBob(float DeltaTime)
+{
+	if (bCameraBobActive) 
+	{ 
+		Timer -= DeltaTime;
+
+		if(Timer >= 0.25f)
+		{
+			ClampedBounce += 60 * DeltaTime;
+		}
+		else
+		{
+			ClampedBounce -= 60 * DeltaTime;
+		}
+
+		if(Timer <= 0.f)
+		{
+			Timer = 0.5f;
+		}
+	}
 }
 
 void ASGPlayerCharacterCameraComponent::ZoomInCamera()
