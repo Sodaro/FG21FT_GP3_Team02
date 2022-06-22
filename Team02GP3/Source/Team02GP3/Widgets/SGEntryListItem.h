@@ -24,7 +24,7 @@ public:
 	//virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	UTextBlock* NameLabel;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

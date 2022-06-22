@@ -3,7 +3,7 @@
 
 #include "SGPlayerUI.h"
 #include "SGLogbook.h"
-#include "Components/Image.h"
+#include "Components/VerticalBox.h"
 #include "Components/ProgressBar.h"
 #include "Components/Overlay.h"
 #include "SGPlayerInteractionComponent.h"
@@ -17,7 +17,7 @@ void USGPlayerUI::Initialize(USGPlayerCharacterLanternComponent* LanternComp, US
 
 void USGPlayerUI::ShowLogbookNotification(USGLogBook* Logbook)
 {
-	LogbookNotificationImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	LogbookVB->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	PlayAnimation(LogNotificationAnim);
 }
 

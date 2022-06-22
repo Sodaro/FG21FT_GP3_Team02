@@ -3,6 +3,8 @@
 #include "GameFramework/SaveGame.h"
 #include "SGSaveGame.generated.h"
 
+class ASGInteractableActor;
+
 UCLASS()
 class TEAM02GP3_API USGSaveGame : public USaveGame
 {
@@ -24,6 +26,16 @@ public:
 
 	UPROPERTY()
 	TArray<FName> LogbookKeys;
+
+	UPROPERTY()
+	TMap<ASGInteractableActor*, bool> SaveInteractables;
+
+	UFUNCTION()
+	void InitializeInteractables();
+
+	UPROPERTY(BlueprintReadOnly)
+	bool HasWatchedIntro = false;
+
 
 	USGSaveGame();
 	

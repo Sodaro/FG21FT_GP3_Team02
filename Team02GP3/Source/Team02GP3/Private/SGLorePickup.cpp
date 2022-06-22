@@ -8,6 +8,9 @@ void ASGLorePickup::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (DataHandle.IsNull())
+		return;
+
 	FString ContextString = "";
 	auto DataPtr = DataHandle.GetRow<FSGLogStruct>(ContextString);
 

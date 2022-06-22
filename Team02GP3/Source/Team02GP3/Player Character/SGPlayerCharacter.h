@@ -9,6 +9,12 @@ class USGPlayerCharacterLanternComponent;
 class USGPlayerInteractionComponent;
 class USGPlayerUI;
 class USGLogBook;
+
+
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSaveLoadedDelegate, USGSaveGame*, SaveGameData);
+
+
 UCLASS()
 class ASGPlayerCharacter : public ACharacter
 {
@@ -138,4 +144,16 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LoadGame();
+
+	UFUNCTION(BlueprintCallable)
+	void SaveInteractable(ASGInteractableActor* Interactable);
+
+	UPROPERTY()
+	TMap<ASGInteractableActor*, bool> Interactables;
+
+	UPROPERTY(BlueprintAssignable)
+	FSaveLoadedDelegate OnSaveDataLoaded;
+
+	UFUNCTION()
+	void OnLogbookOpenChanged(bool Opened);
 };

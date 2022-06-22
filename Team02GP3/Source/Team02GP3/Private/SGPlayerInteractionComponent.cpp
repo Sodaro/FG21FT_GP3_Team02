@@ -90,7 +90,7 @@ void USGPlayerInteractionComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	DisplayTimer -= DeltaTime;
 }
 
-void USGPlayerInteractionComponent::ToggleLogbookVisibility(bool Enabled)
+void USGPlayerInteractionComponent::ToggleLogbookVisibility()
 {
 	APlayerController* Controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	bIsLogbookDisplayed = !bIsLogbookDisplayed;
@@ -113,6 +113,7 @@ void USGPlayerInteractionComponent::ShowLogbook()
 		AudioComponent->Play();
 	}
 	Logbook->SetVisibility(ESlateVisibility::Visible);
+	LogbookOpenChanged.Broadcast(true);
 }
 
 void USGPlayerInteractionComponent::HideLogbook()
@@ -124,6 +125,7 @@ void USGPlayerInteractionComponent::HideLogbook()
 		AudioComponent->Play();
 	}
 	Logbook->SetVisibility(ESlateVisibility::Collapsed);
+	LogbookOpenChanged.Broadcast(false);
 }
 
 void USGPlayerInteractionComponent::ShowBarkText(const FString& Text, float Duration)
@@ -144,25 +146,29 @@ void USGPlayerInteractionComponent::ShowBarkText(const FString& Text, float Dura
 	DisplayTimer = Duration;
 }
 
-void USGPlayerInteractionComponent::DisplayPromptText(const FString& Text, AActor* Target, FVector LocationOffset, bool Visibility)
+void USGPlayerInteractionComponent::DisplayPromptText(const FString& Text, AActor* Target, FVector LocationOffset)
 {
 	if (PromptWidget == nullptr)
 	{
 		return;
 	}
-	if (Visibility == false && Target == PromptWidget->TargetActor)
+	if (Target == nullptr)
 	{
 		PromptWidget->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
-	if (Target == nullptr)
-	{
-		return;
-	}
-
 	PromptWidget->LocationOffset = LocationOffset;
 	PromptWidget->TargetActor = Target;
 	PromptWidget->BarkTextBlock->SetText(FText::FromString(Text));
 	PromptWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+}
+
+void USGPlayerInteractionComponent::HidePromptText()
+{
+	if (PromptWidget == nullptr)
+	{
+		return;
+	}
+	PromptWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 

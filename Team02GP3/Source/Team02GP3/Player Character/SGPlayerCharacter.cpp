@@ -11,6 +11,7 @@
 #include "SGLogbook.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Team02GP3/SGSaveGame.h"
+#include "SGInteractableActor.h"
 
 ASGPlayerCharacter::ASGPlayerCharacter()
 {
@@ -38,11 +39,11 @@ void ASGPlayerCharacter::BeginPlay()
 	}
 
 	PlayerLantern->UVEnabledChanged.AddDynamic(this, &ASGPlayerCharacter::OnUVEnabledChanged);
+	InteractionComponent->LogbookOpenChanged.AddDynamic(this, &ASGPlayerCharacter::OnLogbookOpenChanged);
 
 	PlayerUI = NewObject<USGPlayerUI>(this, PlayerUIClass);
 	PlayerUI->Initialize(PlayerLantern, InteractionComponent);
-	//PlayerUI->LogbookNotificationImage->SetVisibility(ESlateVisibility::Hidden);
-	//PlayerUI->FlashlightProgressBar->SetVisibility(ESlateVisibility::Hidden);
+
 	PlayerUI->AddToViewport();
 	USGSaveGame* SaveGameInstance = Cast<USGSaveGame>(UGameplayStatics::LoadGameFromSlot("SaveSlot", 0));
 	if (SaveGameInstance)
@@ -50,6 +51,27 @@ void ASGPlayerCharacter::BeginPlay()
 		SetActorTransform(SaveGameInstance->PlayerTransform);
 		PlayerLantern->CurrentBattery = SaveGameInstance->CurrentBattery;
 		InteractionComponent->Logbook->AddEntries(SaveGameInstance->LogbookKeys);
+
+		Interactables = SaveGameInstance->SaveInteractables;
+		SaveGameInstance->InitializeInteractables();
+		OnSaveDataLoaded.Broadcast(SaveGameInstance);
+	}
+	else
+	{
+		SaveGame();
+		OnSaveDataLoaded.Broadcast(nullptr);
+	}
+
+	if (Interactables.Num() == 0)
+	{
+		TArray<AActor*> Actors;
+		UGameplayStatics::GetAllActorsOfClass(this, ASGInteractableActor::StaticClass(), Actors);
+		for (AActor* Actor : Actors)
+		{
+			ASGInteractableActor* Interactable = Cast<ASGInteractableActor>(Actor);
+			Interactables.Add(Interactable, false);
+			Interactable->OnGameLoad(false);
+		}
 	}
 }
 
@@ -57,9 +79,8 @@ void ASGPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bRotatePlayer && bIsSprinting == false)
+	if (bRotatePlayer)
 	{
-		//RotateActor(DeltaTime);
 		RotateLantern(DeltaTime);
 	}
 
@@ -68,14 +89,16 @@ void ASGPlayerCharacter::Tick(float DeltaTime)
 		SprintInnactive();
 	}
 
-	if (bIsSprinting && GetCharacterMovement()->Velocity.Size() > 0.f && bDrainStamina)
+	if (bIsSprinting && GetCharacterMovement()->Velocity.Size() > 0.f && CurrentStamina > 0.f)
 	{
+		PlayerCamera->bCharacterIsSprinting = true;
 		PlayerCamera->ZoomInCamera();
 		DecreaseStamina(DeltaTime);
 	}
 	else
 	{
 		PlayerCamera->ZoomOutCamera();
+		SprintInnactive();
 		ReChargeStamina(DeltaTime);
 	}
 }
@@ -120,13 +143,12 @@ void ASGPlayerCharacter::HandleRightInput(float Value)
 void ASGPlayerCharacter::HandleSprintingPressed()
 {
 	if (CurrentStamina <= MinStamina || bIsInteractingWithBox) { return; }
-	PlayerCamera->bCharacterIsSprinting = true;
+
 	SprintActive();
 }
 
 void ASGPlayerCharacter::HandleSprintingReleased()
 {
-	PlayerCamera->bCharacterIsSprinting = false;
 	SprintInnactive();
 }
 
@@ -162,10 +184,7 @@ void ASGPlayerCharacter::HandleRightClick()
 
 void ASGPlayerCharacter::HandleToggleJournal()
 {
-	bToggleJournal = !bToggleJournal;
-	PlayerCamera->bJournalIsOpen = !PlayerCamera->bJournalIsOpen;
-
-	InteractionComponent->ToggleLogbookVisibility(bToggleJournal);
+	InteractionComponent->ToggleLogbookVisibility();
 }
 
 void ASGPlayerCharacter::RotateActor(float DeltaTime)
@@ -181,26 +200,30 @@ void ASGPlayerCharacter::RotateActor(float DeltaTime)
 
 void ASGPlayerCharacter::SprintActive()
 {
+	if (bIsInteractingWithBox) { return; }
+
 	bIsSprinting = true;
 	bDrainStamina = true;
+	bRotatePlayer = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
 	GetCharacterMovement()->MaxAcceleration = MaxAcceleration;
 	GetCharacterMovement()->MaxWalkSpeed = MaxWalkSpeed;
 }
 
 void ASGPlayerCharacter::SprintInnactive()
 {
+	if (bIsInteractingWithBox) { return; }
+
 	bIsSprinting = false;
 	bDrainStamina = false;
+	bRotatePlayer = true;
+
+	PlayerCamera->bCharacterIsSprinting = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-
 	GetCharacterMovement()->MaxAcceleration = Acceleration;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-
-	PlayerCamera->ZoomOutCamera();
 }
 
 void ASGPlayerCharacter::DecreaseStamina(float DeltaTime)
@@ -227,20 +250,22 @@ void ASGPlayerCharacter::ReChargeStamina(float DeltaTime)
 
 void ASGPlayerCharacter::RotateLantern(float DeltaTime)
 {
+	if (bToggleJournal) { return; }
+
 	FRotator TargetRotation = (MouseToWorld() - GetActorLocation()).Rotation();
 	FQuat ForwardRotation = GetActorRotation().Quaternion();
 
-	auto Location = (MouseToWorld() - GetActorLocation());
+	FVector Location = (MouseToWorld() - GetActorLocation());
 	Location.Normalize();
 
 	float Dot = FVector::DotProduct(GetActorForwardVector(), Location);
-	auto Radians = FMath::Acos(Dot);
+	float Radians = FMath::Acos(Dot);
 
 	float Degrees = FMath::RadiansToDegrees(Radians);
 
 	if (Degrees > Range)
 	{
-		auto InterpEPIC = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 10.f);
+		FRotator InterpEPIC = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 10.f);
 		SetActorRotation(InterpEPIC);
 	}
 	else
@@ -343,4 +368,10 @@ void ASGPlayerCharacter::OnUVEnabledChanged(bool Enabled)
 	{
 		PlayerUI->HideFlashlightIndicator();
 	}
+}
+
+void ASGPlayerCharacter::OnLogbookOpenChanged(bool Opened)
+{
+	bToggleJournal = Opened;
+	PlayerCamera->bJournalIsOpen = Opened;
 }

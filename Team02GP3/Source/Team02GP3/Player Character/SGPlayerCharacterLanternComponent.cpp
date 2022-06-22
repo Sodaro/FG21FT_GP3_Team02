@@ -180,4 +180,5 @@ void USGPlayerCharacterLanternComponent::NormalLantern()
 void USGPlayerCharacterLanternComponent::ChargeLantern()
 {
 	CurrentBattery = BatteryMax;
+	bNoBatteryLeft = false;
 }

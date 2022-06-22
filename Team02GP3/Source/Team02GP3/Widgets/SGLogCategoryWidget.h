@@ -15,7 +15,7 @@ class TEAM02GP3_API USGLogCategoryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* CategoryText;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (BindWidget))

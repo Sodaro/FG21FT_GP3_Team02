@@ -13,6 +13,9 @@ class USGButtonWidget;
 class UAudioComponent;
 class USoundBase;
 
+UDELEGATE()
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLogbookOpenDelegate, bool, Enabled);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TEAM02GP3_API USGPlayerInteractionComponent : public UActorComponent
 {
@@ -40,7 +43,7 @@ public:
 	*/
 
 	UFUNCTION(BlueprintCallable)
-	void ToggleLogbookVisibility(bool Enabled);
+	void ToggleLogbookVisibility();
 
 	UFUNCTION()
 	void ShowLogbook();
@@ -52,11 +55,15 @@ public:
 	void ShowBarkText(const FString &Text, float Duration);
 
 	UFUNCTION(BlueprintCallable)
-	void DisplayPromptText(const FString &Text, AActor *Target, FVector LocationOffset, bool Visibility);
+	void DisplayPromptText(const FString &Text, AActor *Target, FVector LocationOffset);
+
+	UFUNCTION(BlueprintCallable)
+	void HidePromptText();
 
 	UPROPERTY(BlueprintReadOnly)
 	USGLogBook* Logbook;
 	
+	FLogbookOpenDelegate LogbookOpenChanged;
 	//-----------Subclasses--------------
 
 	UPROPERTY(EditDefaultsOnly)

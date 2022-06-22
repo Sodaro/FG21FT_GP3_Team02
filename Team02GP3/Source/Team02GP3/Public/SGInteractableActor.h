@@ -37,7 +37,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnPlayerOverlapExit(const ASGPlayerCharacter* Player, const USGPlayerInteractionComponent* InteractionComponent);
 
-
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnGameLoad(bool HasBeenInteractedWith);
 	/**
 	* Fires when the player presses/releases the interact key inside of the trigger.
 	* @return true if key was pressed, false otherwise.

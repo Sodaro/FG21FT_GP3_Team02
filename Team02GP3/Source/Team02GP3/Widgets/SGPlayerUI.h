@@ -12,6 +12,7 @@ class UProgressBar;
 class UImage;
 class USGLogBook;
 class UOverlay;
+class UVerticalBox;
 
 UCLASS()
 class TEAM02GP3_API USGPlayerUI : public UUserWidget
@@ -33,6 +34,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* FlashlightProgressBar;
+
+	UPROPERTY(meta = (BindWIdget))
+	UVerticalBox* LogbookVB;
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* LogbookNotificationImage;

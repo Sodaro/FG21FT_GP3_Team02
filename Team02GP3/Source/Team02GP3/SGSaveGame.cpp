@@ -3,14 +3,24 @@
 #include "Player Character/SGPlayerCharacter.h"
 #include "Player Character/SGPlayerCharacterLanternComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "SGInteractableActor.h"
+
+void USGSaveGame::InitializeInteractables()
+{
+	for (auto& Elem : SaveInteractables)
+	{
+		if (Elem.Key != nullptr)
+		{
+			Elem.Key->OnGameLoad(Elem.Value);
+		}
+	}
+}
 
 USGSaveGame::USGSaveGame()
 {
 	PlayerTransform = FTransform();
 	LogbookKeys = TArray<FName>();
 }
-
-
 
 void ASGPlayerCharacter::SaveGame()
 {
@@ -23,10 +33,9 @@ void ASGPlayerCharacter::SaveGame()
 	//Saves the Battery %
 	SaveGameInstance->CurrentBattery = PlayerLantern->CurrentBattery;
 
-	//SAve level
+	//Save level
 	SaveGameInstance->GetCurrentLevelName = FName(GetWorld()->GetName());
 	SaveGameInstance->SavedLevel = GetWorld()->GetCurrentLevel();
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, SaveGameInstance->GetCurrentLevelName.ToString());
 
 	//deep copy the logbook keys so they can be used to initialize the logbook on start
 	TArray<FName> LogKeys = GetLogbookKeys();
@@ -35,31 +44,35 @@ void ASGPlayerCharacter::SaveGame()
 		SaveGameInstance->LogbookKeys.Emplace(Key);
 	}
 
+	//save the interactable objects and whether they have been interacted with or not
+	SaveGameInstance->SaveInteractables = Interactables;
+	
+	//player only has to see intro once / save
+	SaveGameInstance->HasWatchedIntro = true;
+
 	//Saves the GameInstance
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("SaveSlot"), 0);
-
-	//Log message
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan, TEXT("Game Saved"));
 }
 
 void ASGPlayerCharacter::LoadGame()
 {
 	//Create an instance of the SaveGame class
-	USGSaveGame* SaveGameInstance = Cast<USGSaveGame>(UGameplayStatics::CreateSaveGameObject(USGSaveGame::StaticClass()));
+	//USGSaveGame* SaveGameInstance = Cast<USGSaveGame>(UGameplayStatics::CreateSaveGameObject(USGSaveGame::StaticClass()));
 
 	//Loads the saved game instance
-	SaveGameInstance = Cast<USGSaveGame>(UGameplayStatics::LoadGameFromSlot("SaveSlot", 0));
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, SaveGameInstance->GetCurrentLevelName.ToString());
-	//load level
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, GetWorld()->GetName());
-	UGameplayStatics::OpenLevel(this, SaveGameInstance->GetCurrentLevelName, true);
-	
-	//Loads the set players transform from the save file
-	//this->SetActorTransform(SaveGameInstance->PlayerTransform);
-	//
-	//PlayerLantern->CurrentBattery = SaveGameInstance->CurrentBattery;
-	
+	USGSaveGame* SaveGameInstance = Cast<USGSaveGame>(UGameplayStatics::LoadGameFromSlot("SaveSlot", 0));
+	if (SaveGameInstance == nullptr)
+		return;
 
-	//Log message
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, TEXT("Game Loaded"));
+	//load level
+	UGameplayStatics::OpenLevel(this, SaveGameInstance->GetCurrentLevelName, true);
+}
+
+void ASGPlayerCharacter::SaveInteractable(ASGInteractableActor* Interactable)
+{
+	if (Interactables.Contains(Interactable) == false)
+	{
+		Interactables.Emplace(Interactable, false);
+	}
+	Interactables[Interactable] = true;
 }
